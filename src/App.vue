@@ -191,7 +191,7 @@
 </template>
 
 <script>
-import { subscribeToTicker, unsubscribeFromTicker } from "./api";
+import { subscribeToTicker, unsubscribeFromTicker, getAllTickers } from "./api";
 
 export default {
   name: "App",
@@ -272,7 +272,9 @@ export default {
         return price;
       }
 
-      return price > 1 ? price.toFixed(2) : price.toPrecision(2);
+      return price;
+
+      // return price > 1 ? price.toFixed(2) : price.toPrecision(2);
     },
 
     add(tickerName = "") {
@@ -354,11 +356,9 @@ export default {
   },
 
   async created() {
-    const { Data } = await fetch(
-      "https://min-api.cryptocompare.com/data/all/coinlist?summary=true&api_key=57dacf67302e99a8132ffe6fa5ea37a808510f05d9e17c42827cebcafcb98d00"
-    ).then((res) => res.json());
+    const allTickers = await getAllTickers();
 
-    Object.entries(Data).forEach((arr) => {
+    Object.entries(allTickers).forEach((arr) => {
       this.allTickers.push(arr[1]);
     });
 
