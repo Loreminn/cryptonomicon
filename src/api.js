@@ -1,6 +1,7 @@
 const API_KEY =
   "57dacf67302e99a8132ffe6fa5ea37a808510f05d9e17c42827cebcafcb98d00";
 const AGGREGATE_INDEX = "5";
+const INVALID_SUB_INDEX = "500";
 
 const tickersHandlers = new Map();
 
@@ -9,17 +10,27 @@ const socket = new WebSocket(
 );
 
 socket.addEventListener("message", (e) => {
-  const {
+  let {
     TYPE: type,
     FROMSYMBOL: currency,
     PRICE: newPrice,
   } = JSON.parse(e.data);
-  if (type !== AGGREGATE_INDEX) {
+
+  if (
+    (type !== AGGREGATE_INDEX && type !== INVALID_SUB_INDEX) ||
+    (newPrice === undefined && type !== INVALID_SUB_INDEX)
+  ) {
     return;
   }
 
+  if (type === INVALID_SUB_INDEX) {
+    currency = JSON.parse(e.data).PARAMETER;
+    currency = currency.split("~")[2];
+    newPrice = "-";
+  }
+
   const handlers = tickersHandlers.get(currency) ?? [];
-  handlers.forEach((fn) => fn(newPrice));
+  handlers.forEach((fn) => fn(newPrice, type));
 });
 
 function sendToWebSocket(message) {
@@ -42,14 +53,14 @@ function sendToWebSocket(message) {
 function subscribeToTickerOnWs(ticker) {
   sendToWebSocket({
     action: "SubAdd",
-    subs: [`5~CCCAGG~${ticker}~USD`],
+    subs: [`5~CCCAGG~${ticker}~BTC`],
   });
 }
 
 function unsubscribeToTickerOnWs(ticker) {
   sendToWebSocket({
     action: "SubRemove",
-    subs: [`5~CCCAGG~${ticker}~USD`],
+    subs: [`5~CCCAGG~${ticker}~BTC`],
   });
 }
 

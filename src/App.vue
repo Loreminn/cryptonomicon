@@ -112,8 +112,10 @@
             @click="select(t)"
             :class="{
               'border-4': selectedTicker === t,
+              'bg-red-100': t.type === '500',
+              'bg-white': t.message !== '500',
             }"
-            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+            class="overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
@@ -150,7 +152,10 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ selectedTicker.name }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+          class="flex items-end border-gray-600 border-b border-l h-64"
+          ref="graph"
+        >
           <div
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
@@ -200,12 +205,18 @@ export default {
     return {
       ticker: "",
       filter: "",
+
       tickers: [],
-      graph: [],
       allTickers: [],
+
+      graph: [],
+      maxGraphElements: 1,
+
       selectedTicker: null,
+
       isLoading: true,
       isAdded: false,
+
       page: 1,
     };
   },
@@ -267,14 +278,27 @@ export default {
   },
 
   methods: {
+    formatGraphBarsWidth() {
+      if (this.graph.length > this.maxGraphElements) {
+        this.graph = this.graph.slice(0, this.maxGraphElements);
+      }
+    },
+
+    calculateMaxGraphElements() {
+      if (!this.$refs.graph) {
+        return;
+      }
+
+      this.maxGraphElements = this.$refs.graph.clientWidth / 38;
+      this.formatGraphBarsWidth();
+    },
+
     formatPrice(price) {
       if (price === "-") {
         return price;
       }
 
-      return price;
-
-      // return price > 1 ? price.toFixed(2) : price.toPrecision(2);
+      return price > 1 ? price.toFixed(2) : price.toPrecision(2);
     },
 
     add(tickerName = "") {
@@ -284,6 +308,7 @@ export default {
             ? tickerName
             : this.ticker,
         price: "-",
+        type: "",
       };
 
       if (this.tickers.some((t) => t.name === currentTicker.name)) {
@@ -293,9 +318,10 @@ export default {
 
       this.tickers = [...this.tickers, currentTicker];
       this.ticker = "";
-      subscribeToTicker(currentTicker.name, (newPrice) =>
-        this.updateTicker(currentTicker.name, newPrice)
-      );
+      subscribeToTicker(currentTicker.name, (newPrice, type) => {
+        console.log(newPrice, type);
+        this.updateTicker(currentTicker.name, newPrice, type);
+      });
     },
 
     select(ticker) {
@@ -318,11 +344,17 @@ export default {
       }
     },
 
-    updateTicker(tickerName, price) {
+    updateTicker(tickerName, price, type) {
       this.tickers
         .filter((t) => t.name === tickerName)
         .forEach((t) => {
+          if (t === this.selectedTicker) {
+            this.graph.push(price);
+            this.formatGraphBarsWidth();
+          }
+
           t.price = price;
+          t.type = type;
         });
     },
   },
@@ -330,6 +362,7 @@ export default {
   watch: {
     selectedTicker() {
       this.graph = [];
+      this.$nextTick().then(this.calculateMaxGraphElements);
     },
 
     tickers() {
@@ -353,6 +386,14 @@ export default {
         `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
       );
     },
+  },
+
+  mounted() {
+    window.addEventListener("resize", this.calculateMaxGraphElements);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("resize", this.calculateMaxGraphElements);
   },
 
   async created() {
@@ -380,9 +421,9 @@ export default {
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach((ticker) => {
-        subscribeToTicker(ticker.name, (newPrice) =>
-          this.updateTicker(ticker.name, newPrice)
-        );
+        subscribeToTicker(ticker.name, (newPrice, type) => {
+          this.updateTicker(ticker.name, newPrice, type);
+        });
       });
     }
 
