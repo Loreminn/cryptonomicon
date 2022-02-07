@@ -71,6 +71,11 @@ export default {
       this.$emit("add-ticker", this.ticker);
       this.ticker = "";
     },
+
+    addFromClue(ticker) {
+      this.$emit("add-ticker", ticker.Symbol);
+    },
+
     onInputTicker() {
       this.$emit("input-ticker");
     },
