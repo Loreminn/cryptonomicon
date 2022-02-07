@@ -53,14 +53,14 @@ function sendToWebSocket(message) {
 function subscribeToTickerOnWs(ticker) {
   sendToWebSocket({
     action: "SubAdd",
-    subs: [`5~CCCAGG~${ticker}~BTC`],
+    subs: [`5~CCCAGG~${ticker}~USD`],
   });
 }
 
 function unsubscribeToTickerOnWs(ticker) {
   sendToWebSocket({
     action: "SubRemove",
-    subs: [`5~CCCAGG~${ticker}~BTC`],
+    subs: [`5~CCCAGG~${ticker}~USD`],
   });
 }
 
