@@ -1,11 +1,11 @@
 <template>
-  <section v-if="selectedTicker" class="relative">
+  <section class="relative">
     <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
       {{ selectedTicker.name }} - USD
     </h3>
     <div
       class="flex items-end border-gray-600 border-b border-l h-64"
-      ref="graph"
+      ref="graphRef"
     >
       <div
         v-for="(bar, idx) in normalizedGraph"
@@ -51,7 +51,7 @@ export default {
       },
     },
     selectedTicker: {
-      type: Object,
+      type: Object || null,
       required: true,
       default() {
         return {};
@@ -78,6 +78,18 @@ export default {
     closeGraph() {
       this.$emit("close-graph");
     },
+
+    emitGraphWidth() {
+      this.$emit("graph-width", this.$refs.graphRef.clientWidth);
+    },
+  },
+
+  mounted() {
+    window.addEventListener("resize", this.emitGraphWidth);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener("resize", this.emitGraphWidth);
   },
 };
 </script>

@@ -97,7 +97,9 @@
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
       <tickers-graph
+        v-if="selectedTicker"
         @close-graph="closeGraph"
+        @graph-width="calculateMaxGraphElements"
         :graph="graph"
         :selectedTicker="selectedTicker"
       />
@@ -118,7 +120,6 @@ export default {
 
   data() {
     return {
-      ticker: "",
       filter: "",
 
       tickers: [],
@@ -178,12 +179,8 @@ export default {
       }
     },
 
-    calculateMaxGraphElements() {
-      if (!this.$refs.graph) {
-        return;
-      }
-
-      this.maxGraphElements = this.$refs.graph.clientWidth / 38;
+    calculateMaxGraphElements(graphWidth) {
+      this.maxGraphElements = graphWidth / 38;
       this.formatGraphBarsWidth();
     },
 
@@ -197,10 +194,7 @@ export default {
 
     add(tickerName = "") {
       const currentTicker = {
-        name:
-          typeof tickerName !== "object" && tickerName
-            ? tickerName
-            : this.ticker,
+        name: tickerName,
         price: "-",
         type: "",
       };
@@ -211,9 +205,7 @@ export default {
       }
 
       this.tickers = [...this.tickers, currentTicker];
-      this.ticker = "";
       subscribeToTicker(currentTicker.name, (newPrice, type) => {
-        console.log(newPrice, type);
         this.updateTicker(currentTicker.name, newPrice, type);
       });
     },
@@ -229,13 +221,6 @@ export default {
       }
 
       unsubscribeFromTicker(tickerToRemove.name);
-    },
-
-    addFromClue(ticker) {
-      this.add(ticker.Symbol);
-      if (this.isAdded) {
-        this.ticker = ticker.Symbol;
-      }
     },
 
     updateTicker(tickerName, price, type) {
@@ -280,14 +265,6 @@ export default {
         `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
       );
     },
-  },
-
-  mounted() {
-    window.addEventListener("resize", this.calculateMaxGraphElements);
-  },
-
-  beforeUnmount() {
-    window.removeEventListener("resize", this.calculateMaxGraphElements);
   },
 
   async created() {
